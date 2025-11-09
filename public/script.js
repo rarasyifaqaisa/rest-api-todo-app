@@ -40,9 +40,17 @@ function renderTodos(todos) {
         todoText.textContent =todo.deskripsi;
 
         todoText.addEventListener('click', () => ToggleTodoStatus(todo.id));
+
+        const actionDiv = document.createElement('div');
+        const deleteButton = document.createElement('button');
+        deleteButton.textContent = 'Delete';
+        deleteButton.className = 'btn btn-danger btn-sm';
+        deleteButton.addEventListener('click', () => deleteTodo(todo.id));
         
         // menjahit child
+        actionDiv.appendChild(deleteButton);
         li.appendChild(todoText);
+        li.appendChild(actionDiv);
         todoList.appendChild(li);
     });
 }
@@ -65,4 +73,58 @@ async function ToggleTodoStatus(id) {
     }
 }
 
+async function addTodo() {
+    const deskripsi = newTodoInput.value.trim();
+    if(!deskripsi) {
+        alert('jangan kosong');
+        return;
+    }
+
+    let data = {'deskripsi': deskripsi};
+    try {
+        console.log (JSON.stringify(data));
+        const response = await fetch(`${API_URL}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        });
+
+        if(!response.ok) {
+            throw new Error(`error status: ${response.status}`);
+        }
+
+        const newTodo = await response.json();
+        console.log('todo baru sudah ditambah: ', newTodo);
+        newTodoInput.value = '';
+        fetchTodos();
+    } catch(error) {
+        console.error('error adding todo status', error);
+    }
+}
+
+async function deleteTodo(id) {
+    if(!confirm('apakah anda yakin untuk menghapus todo ini?')) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_URL}/${id}`, {
+            method: 'DELETE'
+        })
+
+        if(!response.ok) {
+            if(response.status == 204) {
+                console.log(`Todo ${id} sukses dihapus`);
+            } else {
+                throw new Error(`error ${response.status}`);
+            }
+        }
+    } catch(error) {
+        console.error('error delete todo', error);
+    }
+}
+
+addTodoBtn.addEventListener('click', addTodo);
 document.addEventListener('DOMContentLoaded', fetchTodos);
